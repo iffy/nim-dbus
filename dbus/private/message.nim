@@ -32,21 +32,21 @@ proc sendMessageWithReply*(bus: Bus, msg: Message): PendingCall =
 
 # Serialization
 
-proc append(iter: ptr DbusMessageIter, x: DbusValue)
-proc append[T](iter: ptr DbusMessageIter, x: T)
+proc append(iter: ptr DbusMessageIter, x: DbusValue) {.gcsafe.}
+proc append[T](iter: ptr DbusMessageIter, x: T) {.gcsafe.}
 
 proc initIter(msg: Message): DbusMessageIter =
   dbus_message_iter_init_append(msg.msg, addr result)
 
-proc appendPtr(iter: ptr DbusMessageIter, typecode: DbusType, data: pointer) =
+proc appendPtr(iter: ptr DbusMessageIter, typecode: DbusType, data: pointer) {.gcsafe.} =
   if dbus_message_iter_append_basic(iter, typecode.kind.char.cint, data) == 0:
       raise newException(DbusException, "append_basic")
 
-proc appendPrimitive[T](iter: ptr DbusMessageIter, kind: DbusType, x: T) =
+proc appendPrimitive[T](iter: ptr DbusMessageIter, kind: DbusType, x: T) {.gcsafe.} =
   var y: T = x
   iter.appendPtr(kind, addr y)
 
-proc appendArray(iter: ptr DbusMessageIter, sig: string, arr: openarray[DbusValue]) =
+proc appendArray(iter: ptr DbusMessageIter, sig: string, arr: openarray[DbusValue]) {.gcsafe.} =
   var subIter: DBusMessageIter
   var subIterPtr = addr subIter
   if dbus_message_iter_open_container(iter, cint(dtArray), cstring(sig), subIterPtr) == 0:
@@ -56,7 +56,7 @@ proc appendArray(iter: ptr DbusMessageIter, sig: string, arr: openarray[DbusValu
   if dbus_message_iter_close_container(iter, subIterPtr) == 0:
     raise newException(DbusException, "close_container")
 
-proc appendDictEntry(iter: ptr DbusMessageIter, key, val: DbusValue) =
+proc appendDictEntry(iter: ptr DbusMessageIter, key, val: DbusValue) {.gcsafe.} =
   var subIter: DbusMessageIter
   var subIterPtr = addr subIter
   if dbus_message_iter_open_container(iter, cint(dtDictEntry), nil, subIterPtr) == 0:
@@ -66,7 +66,7 @@ proc appendDictEntry(iter: ptr DbusMessageIter, key, val: DbusValue) =
   if dbus_message_iter_close_container(iter, subIterPtr) == 0:
     raise newException(DbusException, "close_container")
 
-proc appendVariant(iter: ptr DbusMessageIter, sig: string, val: DbusValue) =
+proc appendVariant(iter: ptr DbusMessageIter, sig: string, val: DbusValue) {.gcsafe.} =
   var subIter: DbusMessageIter
   var subIterPtr = addr subIter
   if dbus_message_iter_open_container(iter, cint(dtVariant), sig, subIterPtr) == 0:
@@ -75,7 +75,7 @@ proc appendVariant(iter: ptr DbusMessageIter, sig: string, val: DbusValue) =
   if dbus_message_iter_close_container(iter, subIterPtr) == 0:
     raise newException(DbusException, "close_container")
 
-proc appendStruct(iter: ptr DbusMessageIter, arr: openarray[DbusValue]) =
+proc appendStruct(iter: ptr DbusMessageIter, arr: openarray[DbusValue]) {.gcsafe.} =
   var subIter: DbusMessageIter
   var subIterPtr = addr subIter
   if dbus_message_iter_open_container(iter, cint(dtStruct), nil, subIterPtr) == 0:
@@ -85,7 +85,7 @@ proc appendStruct(iter: ptr DbusMessageIter, arr: openarray[DbusValue]) =
   if dbus_message_iter_close_container(iter, subIterPtr) == 0:
     raise newException(DbusException, "close_container")
 
-proc append(iter: ptr DbusMessageIter, x: DbusValue) =
+proc append(iter: ptr DbusMessageIter, x: DbusValue) {.gcsafe.} =
   var myX = x
   case x.kind:
     of dbusScalarTypes:
@@ -106,9 +106,9 @@ proc append(iter: ptr DbusMessageIter, x: DbusValue) =
       raise newException(ValueError, "not serializable")
 
 # anything convertible to DbusValue
-proc append[T](iter: ptr DbusMessageIter, x: T) =
+proc append[T](iter: ptr DbusMessageIter, x: T) {.gcsafe.} =
   iter.append(x.asDbusValue)
 
-proc append*[T](msg: Message, x: T) =
+proc append*[T](msg: Message, x: T) {.gcsafe.} =
   var iter = initIter(msg)
   append(addr iter, x)
